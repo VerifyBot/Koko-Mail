@@ -7,7 +7,7 @@ cur =  conn.cursor()
 
 
 SETUP = dict(
-  users = False,
+  users = True,
   mails = True,
   spam = True,
   star = True
