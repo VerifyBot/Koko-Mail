@@ -1,4 +1,5 @@
 import os
+import sys
 import contextlib
 import hashlib
 import random
@@ -362,7 +363,7 @@ class KokoServer(KokoRoutes):
 
     return resp
 
-  def run(self):
+  def run(self, ip=None, port=None):
     """
     The main function of the server.
     It handles new clients and creates a thread for each one.
@@ -380,7 +381,7 @@ class KokoServer(KokoRoutes):
     self.server_sock = ctx.wrap_socket(self.server_sock, server_side=True)
 
     try:
-      self.server_sock.bind((SERVER_IP, SERVER_PORT))  # bind to port and ip from config file
+      self.server_sock.bind((ip or SERVER_IP, port or SERVER_PORT))  # bind to port and ip from config file
     except OSError:
       print('Port is perhaps unavailable')
       # print traceback
@@ -550,19 +551,22 @@ class KokoServer(KokoRoutes):
         continue
       except DisconnectedError as e:
         logging.error(f'Client {tid} disconnected during recv()')
-        self.send_error(sock, tid, e, 'Disconnected')
+        with contextlib.suppress(Exception):  # already disconnected, so prolly wouldn't work
+          self.send_error(sock, tid, e, 'Disconnected')
         break
       except BadMessageError as e:
         logging.error(f'Client {tid} sent bad message ({e})')
         self.send_error(sock, tid, e)
       except socket.error as err:
         logging.error(f'Socket Error exit client loop: err:  {err}')
-        self.send_error(sock, tid, err, 'Socket Error')
+        with contextlib.suppress(Exception):
+          self.send_error(sock, tid, err, 'Socket Error')
         break
       except Exception as err:
         logging.error(f'General Error %s exit client loop: {err}')
         logging.error(traceback.format_exc())
-        self.send_error(sock, tid, err, 'General Error')
+        with contextlib.suppress(Exception):
+          self.send_error(sock, tid, err, 'General Error')
         break
 
     logging.info(f'Client {tid} Exit')
@@ -570,4 +574,10 @@ class KokoServer(KokoRoutes):
 
 
 if __name__ == '__main__':
-  KokoServer().run()
+  if len(sys.argv) == 1:
+    KokoServer().run()
+  else:
+    try:
+      KokoServer().run(sys.argv[1], int(sys.argv[2]))
+    except IndexError:
+      print('Usage: koko_server.py <server_ip> <server_port>')

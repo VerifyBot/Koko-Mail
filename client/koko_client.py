@@ -656,7 +656,7 @@ class KokoMail(MDApp, IndexCls, MailListCls):
     for edge_app in [('Mailbox', 'notification-clear-all', functools.partial(self.apply_mail_filter, None)),
                      ('Important', 'star', functools.partial(self.apply_mail_filter, 'star')),
                      ('Spam', 'trash-can', functools.partial(self.apply_mail_filter, 'spam')),
-                     ('Forwarded', 'chevron-double-right'),
+                     # ('Forwarded', 'chevron-double-right'),
                      ('Sent', 'chart-bubble', functools.partial(self.apply_mail_filter, 'sent')),
                      ('Settings', 'cog', lambda _: setattr(self.root, 'current', 'settings'))
                      ]:
@@ -695,8 +695,10 @@ class KokoMail(MDApp, IndexCls, MailListCls):
     self.theme_cls.accent_palette = theme['accent_color']
     self.theme_cls.theme_style = theme['theme_style']
 
-    with open('client_config.json') as f:
-      dt = jsoon.load(f)
+    dt = {}
+    if os.path.exists('client_config.json'):
+      with open('client_config.json') as f:
+        dt = jsoon.load(f)
 
     dt['theme'] = theme
 
@@ -765,9 +767,9 @@ class KokoMail(MDApp, IndexCls, MailListCls):
     login_box = MDBoxLayout(orientation='vertical', size_hint_y=None, size_hint_x=None,
                             width="300dp", pos_hint={"center_x": .5, "center_y": .5}, )
     username_input = MDTextField(hint_text="@username", icon_left="horse-human",
-                                 write_tab=False, multiline=False, text="niryo123")
+                                 write_tab=False, multiline=False, text="")
     password_input = MDTextField(hint_text="password", password=True, write_tab=False,
-                                 multiline=False, icon_left="key-variant", text="niryo123")
+                                 multiline=False, icon_left="key-variant", text="")
     login_button = ThemedButton(text="     LOGIN     ", on_press=self.on_login)
     login_box.add_widget(username_input)
     login_box.add_widget(password_input)
@@ -781,11 +783,11 @@ class KokoMail(MDApp, IndexCls, MailListCls):
     register_box = MDBoxLayout(orientation='vertical', size_hint_y=None, size_hint_x=None,
                                width="300dp", pos_hint={"center_x": .5, "center_y": .4}, )
     username_input = MDTextField(hint_text="username", icon_left="human-greeting-proximity",
-                                 write_tab=False, multiline=False, text="niryo123")
+                                 write_tab=False, multiline=False, text="")
     email_input = MDTextField(hint_text="email address", icon_left="email",
-                              write_tab=False, multiline=False, text="mymail123@gmail.com")
+                              write_tab=False, multiline=False, text="")
     password_input = MDTextField(hint_text="password", password=True, write_tab=False,
-                                 multiline=False, icon_left="key-variant", text="niryo123")
+                                 multiline=False, icon_left="key-variant", text="")
     register_button = ThemedButton(text=" CREATE ACCOUNT ", on_press=self.on_register)
     register_box.add_widget(username_input)
     register_box.add_widget(email_input)
@@ -798,18 +800,18 @@ class KokoMail(MDApp, IndexCls, MailListCls):
     # </REGISTER LAYOUT>
 
 
-def main():
+def main(ip=None, port=None):
   """
     main client - handle socket and main loop
     """
 
   sock = socket.socket()
-  ip = SERVER_IP
+  ip = ip or SERVER_IP
 
   if ip == '0.0.0.0':
     ip = '127.0.0.1'
 
-  port = SERVER_PORT
+  port = port or SERVER_PORT
 
   ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
   ctx.load_verify_locations('new.pem')
@@ -861,4 +863,10 @@ def main():
 
 
 if __name__ == '__main__':
-  main()
+  if len(sys.argv) == 1:
+    main()
+  else:
+    try:
+      main(sys.argv[1], int(sys.argv[2]))
+    except IndexError:
+      print('Usage: koko_client.py <server_ip> <server_port>')
